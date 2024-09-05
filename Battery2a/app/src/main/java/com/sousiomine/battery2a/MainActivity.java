@@ -1,30 +1,41 @@
-package com.example.firstglyph;
+package com.sousiomine.battery2a;
 
 import android.content.ComponentName;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
+import android.widget.Switch;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.ListenableWorker;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.nothing.ketchum.Common;
-import com.nothing.ketchum.Glyph;
 import com.nothing.ketchum.GlyphException;
 import com.nothing.ketchum.GlyphFrame;
 import com.nothing.ketchum.GlyphManager;
 
-public class MainActivity extends AppCompatActivity{
+import java.util.concurrent.TimeUnit;
 
-    GlyphManager gManager = null;
+public class MainActivity extends AppCompatActivity {
 
-    Button button1;
-    Button button2;
-    Button button3;
+    GlyphManager gManager;
+
+    Handler handler = new Handler();
+    Runnable batterySyncRunnable;
+
+    TextView textView;
+    Switch toggleSwitch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +48,7 @@ public class MainActivity extends AppCompatActivity{
             return insets;
         });
 
-        GlyphManager.Callback gcallback = new GlyphManager.Callback() {
+        GlyphManager.Callback callback = new GlyphManager.Callback() {
             @Override
             public void onServiceConnected(ComponentName componentName) {
                 if (Common.is20111()) gManager.register(Common.DEVICE_20111);
@@ -60,60 +71,68 @@ public class MainActivity extends AppCompatActivity{
             }
         };
 
-
-
         gManager = GlyphManager.getInstance(getApplicationContext());
-        gManager.init(gcallback);
+        gManager.init(callback);
 
-
-        button1 = findViewById(R.id.button1);
-        button1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ///ここが光らせる処理
-                GlyphFrame.Builder builder = gManager.getGlyphFrameBuilder();
-                GlyphFrame frame = builder.buildChannelA().build();
-                gManager.toggle(frame);
+        textView = findViewById(R.id.textView);
+        toggleSwitch = findViewById(R.id.toggleSwitch);
+        toggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                startGlyph();
+            } else {
+                stopGlyph();
             }
         });
 
-        button2 = findViewById(R.id.button2);
-        button2.setOnClickListener(new View.OnClickListener() {
+        batterySyncRunnable = new Runnable() {
             @Override
-            public void onClick(View view) {
+            public void run() {
                 GlyphFrame.Builder builder = gManager.getGlyphFrameBuilder();
                 GlyphFrame frame = builder.buildChannelC().build();
                 try {
-                    //たぶん0~100で長さ調整できる
-                    gManager.displayProgress(frame, 50);
+                    gManager.displayProgress(frame, updateBatteryPercentage());
                 } catch (GlyphException e) {
-                    throw new RuntimeException(e);
+
                 }
-            }
-        });
 
-        button3 = findViewById(R.id.button3);
-        button3.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                GlyphFrame.Builder builder = gManager.getGlyphFrameBuilder();
-                GlyphFrame frame = builder.buildChannelB().buildInterval(1000).buildCycles(3).buildPeriod(3000).build();
-                gManager.animate(frame);
+                handler.postDelayed(this, 1000);
             }
-        });
+        };
 
+        startGlyph();
     }
 
     @Override
-    public void onDestroy()
-    {
+    public void onDestroy() {
+        super.onDestroy();
+        stopGlyph();
         try {
             gManager.closeSession();
         } catch (GlyphException e) {
             throw new RuntimeException(e);
         }
         gManager.unInit();
-        super.onDestroy();
     }
 
+    private int updateBatteryPercentage() {
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = getApplicationContext().registerReceiver(null, ifilter);
+
+        if (batteryStatus != null) {
+            int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            int batteryPct = (int) ((level / (float) scale) * 100);
+            return batteryPct;
+        }
+        return -1;
+    }
+
+    private void startGlyph() {
+        handler.postDelayed(batterySyncRunnable, 0);
+    }
+
+    private void stopGlyph() {
+        handler.removeCallbacks(batterySyncRunnable);
+        gManager.turnOff();
+    }
 }

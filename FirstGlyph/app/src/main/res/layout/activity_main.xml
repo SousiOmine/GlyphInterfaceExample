@@ -24,14 +24,17 @@
             android:id="@+id/button1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="押すとAが光るよ"
-            tools:ignore="MissingConstraints" />
+            android:text="押すとAが光るよ" />
         <Button
             android:id="@+id/button2"
             android:text="押すとCが半分光るよ"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            />
+            android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/button3"
+            android:text="押すとBがいい感じに点滅するよ"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
     </LinearLayout>
 
 
