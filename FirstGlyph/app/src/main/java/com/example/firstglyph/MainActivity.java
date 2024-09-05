@@ -22,6 +22,7 @@ public class MainActivity extends AppCompatActivity{
     GlyphManager gManager = null;
 
     Button button1;
+    Button button2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +74,23 @@ public class MainActivity extends AppCompatActivity{
                 gManager.toggle(frame);
             }
         });
+
+        button2 = findViewById(R.id.button2);
+        button2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                GlyphFrame.Builder builder = gManager.getGlyphFrameBuilder();
+                GlyphFrame frame = builder.buildChannelC().build();
+                try {
+                    //たぶん0~100で長さ調整できる
+                    gManager.displayProgress(frame, 50);
+                } catch (GlyphException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+
     }
 
     @Override
