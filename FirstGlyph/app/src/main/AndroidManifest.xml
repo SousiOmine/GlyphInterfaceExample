@@ -21,6 +21,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <meta-data android:name="NothingKey" android:value="test"/>
     </application>
+
+    <uses-permission android:name="com.nothing.ketchum.permission.ENABLE"/>
 
 </manifest>
